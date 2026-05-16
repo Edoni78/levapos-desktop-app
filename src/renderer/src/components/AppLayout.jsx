@@ -4,11 +4,11 @@ import { TopBar } from './TopBar.jsx'
 
 export function AppLayout() {
   return (
-    <div className="flex h-full min-h-0 bg-slate-50">
+    <div className="levapos-app">
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="levapos-main">
         <TopBar />
-        <main className="min-h-0 flex-1 overflow-auto p-6">
+        <main className="levapos-content">
           <Outlet />
         </main>
       </div>

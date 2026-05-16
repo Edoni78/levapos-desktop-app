@@ -1,7 +1,16 @@
-@import 'tailwindcss';
+@import '@blueprintjs/core/lib/css/blueprint.css';
+@import '@blueprintjs/icons/lib/css/blueprint-icons.css';
+@import './theme/levapos.css';
 
 html,
 body,
 #root {
   height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--levapos-bg);
+  color: var(--levapos-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
 }

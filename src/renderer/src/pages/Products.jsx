@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { HTMLTable } from '@blueprintjs/core'
 import { Button } from '../components/Button.jsx'
 import { Card } from '../components/Card.jsx'
 import { Input } from '../components/Input.jsx'
+import { PageHeader } from '../components/PageHeader.jsx'
 import { sq } from '../locale/sq.js'
 import { api } from '../services/api.js'
 
@@ -49,49 +51,49 @@ export function ProductsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">{sq.products.title}</h1>
-          <p className="text-sm text-slate-600">{sq.products.subtitle}</p>
-        </div>
-        <Link to="/products/new">
-          <Button type="button" size="lg">
-            {sq.products.addProduct}
-          </Button>
-        </Link>
-      </div>
+    <div className="levapos-page">
+      <PageHeader
+        title={sq.products.title}
+        subtitle={sq.products.subtitle}
+        actions={
+          <Link to="/products/new" style={{ textDecoration: 'none' }}>
+            <Button type="button" size="lg">
+              {sq.products.addProduct}
+            </Button>
+          </Link>
+        }
+      />
 
       <Card>
-        <div className="mb-4 max-w-md">
+        <div className="levapos-mb-md" style={{ maxWidth: 400 }}>
           <Input
             placeholder={sq.products.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {err ? <p className="mb-3 text-sm text-rose-600">{err}</p> : null}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+        {err ? <p className="levapos-text-danger">{err}</p> : null}
+        <div className="levapos-table-wrap">
+          <HTMLTable striped interactive style={{ width: '100%' }}>
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500">
-                <th className="py-2 pr-4 font-medium">{sq.products.colName}</th>
-                <th className="py-2 pr-4 font-medium">{sq.products.colBarcode}</th>
-                <th className="py-2 pr-4 font-medium">{sq.products.colPrice}</th>
-                <th className="py-2 pr-4 font-medium">{sq.products.colStock}</th>
-                <th className="py-2 font-medium"> </th>
+              <tr>
+                <th>{sq.products.colName}</th>
+                <th>{sq.products.colBarcode}</th>
+                <th>{sq.products.colPrice}</th>
+                <th>{sq.products.colStock}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {rows.map((p) => (
-                <tr key={p.id} className="border-b border-slate-100">
-                  <td className="py-3 pr-4 font-medium text-slate-900">{p.name}</td>
-                  <td className="py-3 pr-4 font-mono text-xs">{p.barcode}</td>
-                  <td className="py-3 pr-4">€{p.price.toFixed(2)}</td>
-                  <td className="py-3 pr-4">{p.stockQuantity}</td>
-                  <td className="py-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Link to={`/products/${p.id}/edit`}>
+                <tr key={p.id}>
+                  <td>{p.name}</td>
+                  <td className="levapos-mono">{p.barcode}</td>
+                  <td>€{p.price.toFixed(2)}</td>
+                  <td>{p.stockQuantity}</td>
+                  <td>
+                    <div className="levapos-row">
+                      <Link to={`/products/${p.id}/edit`} style={{ textDecoration: 'none' }}>
                         <Button type="button" size="sm" variant="secondary">
                           {sq.common.edit}
                         </Button>
@@ -110,7 +112,7 @@ export function ProductsPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </HTMLTable>
         </div>
       </Card>
     </div>

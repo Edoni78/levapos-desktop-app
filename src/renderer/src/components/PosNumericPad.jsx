@@ -1,5 +1,5 @@
+import { Button } from '@blueprintjs/core'
 import { sq } from '../locale/sq.js'
-import { Button } from './Button.jsx'
 
 const KEYS = [
   ['7', '8', '9'],
@@ -16,63 +16,62 @@ const KEYS = [
  */
 export function PosNumericPad({ onDigit, onClear, onBackspace }) {
   return (
-    <div
-      className="select-none rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100 p-4 shadow-inner"
-      data-pos-keep-focus
-    >
-      <div className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="levapos-numpad" data-pos-keep-focus>
+      <div className="levapos-text-xs" style={{ textAlign: 'center', marginBottom: 12, fontWeight: 600 }}>
         {sq.numpad.title}
       </div>
-      <div className="mx-auto grid max-w-[280px] gap-2">
+      <div className="levapos-numpad-grid">
         {KEYS.map((row) => (
-          <div key={row.join('')} className="grid grid-cols-3 gap-2">
+          <div key={row.join('')} className="levapos-numpad-row">
             {row.map((d) => (
-              <button
+              <Button
                 key={d}
                 type="button"
+                className="levapos-numpad-key"
                 data-pos-keep-focus
-                className="flex h-14 items-center justify-center rounded-xl bg-white text-xl font-bold text-slate-800 shadow-md ring-1 ring-slate-200/80 transition hover:bg-emerald-50 hover:text-emerald-900 active:scale-[0.97] active:shadow-inner"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onDigit(d)}
               >
                 {d}
-              </button>
+              </Button>
             ))}
           </div>
         ))}
-        <div className="grid grid-cols-3 gap-2">
-          <button
+        <div className="levapos-numpad-row">
+          <Button
             type="button"
+            className="levapos-numpad-key"
             data-pos-keep-focus
-            className="flex h-14 items-center justify-center rounded-xl bg-white text-lg font-bold text-slate-700 shadow-md ring-1 ring-slate-200/80 transition hover:bg-slate-50 active:scale-[0.97]"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onDigit('.')}
           >
             .
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            className="levapos-numpad-key"
             data-pos-keep-focus
-            className="flex h-14 items-center justify-center rounded-xl bg-white text-xl font-bold text-slate-800 shadow-md ring-1 ring-slate-200/80 transition hover:bg-emerald-50 hover:text-emerald-900 active:scale-[0.97]"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onDigit('0')}
           >
             0
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            className="levapos-numpad-key"
+            intent="warning"
             data-pos-keep-focus
-            className="flex h-14 items-center justify-center rounded-xl bg-amber-50 text-sm font-bold text-amber-900 shadow-md ring-1 ring-amber-200/80 transition hover:bg-amber-100 active:scale-[0.97]"
             onMouseDown={(e) => e.preventDefault()}
             onClick={onBackspace}
           >
             ⌫
-          </button>
+          </Button>
         </div>
         <Button
           type="button"
-          variant="secondary"
-          className="h-12 w-full font-semibold"
+          outlined
+          fill
+          large
           data-pos-keep-focus
           onMouseDown={(e) => e.preventDefault()}
           onClick={onClear}

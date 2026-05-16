@@ -1,19 +1,15 @@
+import { Card as BpCard, H5 } from '@blueprintjs/core'
+
 export function Card({ title, subtitle, children, className = '' }) {
   return (
-    <div
-      className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm ${className}`}
-    >
+    <BpCard className={className} elevation={1}>
       {(title || subtitle) && (
-        <div className="mb-4">
-          {title ? (
-            <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-          ) : null}
-          {subtitle ? (
-            <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
-          ) : null}
+        <div className="levapos-mb-md">
+          {title ? <H5 className="levapos-page-title" style={{ margin: 0 }}>{title}</H5> : null}
+          {subtitle ? <p className="levapos-page-subtitle">{subtitle}</p> : null}
         </div>
       )}
       {children}
-    </div>
+    </BpCard>
   )
 }

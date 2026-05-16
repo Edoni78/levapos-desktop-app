@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { FormGroup, HTMLTable, InputGroup } from '@blueprintjs/core'
 import { Button } from '../components/Button.jsx'
 import { Card } from '../components/Card.jsx'
+import { PageHeader } from '../components/PageHeader.jsx'
 import { sq } from '../locale/sq.js'
 import { api } from '../services/api.js'
 
@@ -104,39 +106,24 @@ export function ReportsPage() {
   }, [rows])
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">{sq.reports.title}</h1>
-        <p className="text-sm text-slate-600">{sq.reports.subtitle}</p>
-      </div>
-      {err ? <p className="text-sm text-rose-600">{err}</p> : null}
-      {msg ? <p className="text-sm text-emerald-800">{msg}</p> : null}
+    <div className="levapos-page">
+      <PageHeader title={sq.reports.title} subtitle={sq.reports.subtitle} />
+      {err ? <p className="levapos-text-danger">{err}</p> : null}
+      {msg ? <p className="levapos-text-success">{msg}</p> : null}
 
       <Card title={sq.reports.filters}>
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">{sq.reports.start}</label>
-            <input
-              type="date"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">{sq.reports.end}</label>
-            <input
-              type="date"
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              value={end}
-              onChange={(e) => setEnd(e.target.value)}
-            />
-          </div>
+        <div className="levapos-row" style={{ alignItems: 'flex-end' }}>
+          <FormGroup label={sq.reports.start}>
+            <InputGroup type="date" value={start} onChange={(e) => setStart(e.target.value)} />
+          </FormGroup>
+          <FormGroup label={sq.reports.end}>
+            <InputGroup type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+          </FormGroup>
           <Button type="button" variant="secondary" onClick={() => void reload()}>
             {sq.common.refresh}
           </Button>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="levapos-row levapos-mt-sm">
           <Button type="button" onClick={() => void exportSales()}>
             {sq.reports.exportSalesRange}
           </Button>
@@ -149,66 +136,64 @@ export function ReportsPage() {
         </div>
       </Card>
 
-      {/* {rows.length > 0 ? (
-        <div className="rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white px-4 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+      {rows.length > 0 ? (
+        <div className="levapos-summary-banner">
+          <p className="levapos-text-xs" style={{ margin: 0, fontWeight: 600, textTransform: 'uppercase' }}>
             {sq.reports.grandTotalRange}
           </p>
-          <p className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <span className="text-2xl font-bold tabular-nums text-emerald-700">
-              €{rangeSalesTotal.total.toFixed(2)}
-            </span>
-            <span className="text-sm text-slate-600">{sq.reports.invoicesInRange(rangeSalesTotal.count)}</span>
+          <p style={{ margin: '8px 0 0', display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'baseline' }}>
+            <span className="levapos-summary-amount">€{rangeSalesTotal.total.toFixed(2)}</span>
+            <span className="levapos-text-muted">{sq.reports.invoicesInRange(rangeSalesTotal.count)}</span>
           </p>
         </div>
-      ) : null} */}
+      ) : null}
 
       <Card title={sq.reports.preview}>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+        <div className="levapos-table-wrap">
+          <HTMLTable striped interactive style={{ width: '100%' }}>
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500">
-                <th className="py-2 pr-4 font-medium">{sq.reports.colSale}</th>
-                <th className="py-2 pr-4 font-medium">{sq.reports.colWhen}</th>
-                <th className="py-2 pr-4 font-medium">{sq.reports.colCashier}</th>
-                <th className="py-2 pr-4 font-medium">{sq.reports.colProduct}</th>
-                <th className="py-2 pr-4 font-medium">{sq.reports.colQty}</th>
-                <th className="py-2 pr-4 font-medium">{sq.reports.colLine}</th>
-                <th className="py-2 font-medium">{sq.reports.colSaleTotal}</th>
+              <tr>
+                <th>{sq.reports.colSale}</th>
+                <th>{sq.reports.colWhen}</th>
+                <th>{sq.reports.colCashier}</th>
+                <th>{sq.reports.colProduct}</th>
+                <th>{sq.reports.colQty}</th>
+                <th>{sq.reports.colLine}</th>
+                <th>{sq.reports.colSaleTotal}</th>
               </tr>
             </thead>
             <tbody>
               {flatLines.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-6 text-center text-slate-500">
+                  <td colSpan={7} style={{ textAlign: 'center', padding: 24 }} className="levapos-text-muted">
                     {sq.reports.noRows}
                   </td>
                 </tr>
               ) : (
                 flatLines.map(({ sale, it }) => (
-                  <tr key={`${sale.id}-${it.id}`} className="border-b border-slate-100">
-                    <td className="py-2 pr-4 font-mono text-xs">{sale.id}</td>
-                    <td className="py-2 pr-4 text-xs">{sale.createdAt}</td>
-                    <td className="py-2 pr-4">{sale.cashierName}</td>
-                    <td className="py-2 pr-4">{it.productName}</td>
-                    <td className="py-2 pr-4">{it.quantity}</td>
-                    <td className="py-2 pr-4">€{it.lineTotal.toFixed(2)}</td>
-                    <td className="py-2">€{sale.totalAmount.toFixed(2)}</td>
+                  <tr key={`${sale.id}-${it.id}`}>
+                    <td className="levapos-mono">{sale.id}</td>
+                    <td className="levapos-text-xs">{sale.createdAt}</td>
+                    <td>{sale.cashierName}</td>
+                    <td>{it.productName}</td>
+                    <td>{it.quantity}</td>
+                    <td>€{it.lineTotal.toFixed(2)}</td>
+                    <td>€{sale.totalAmount.toFixed(2)}</td>
                   </tr>
                 ))
               )}
             </tbody>
             {flatLines.length > 0 ? (
               <tfoot>
-                <tr className="border-t-2 border-emerald-200 bg-emerald-50/60 font-semibold text-emerald-900">
-                  <td colSpan={6} className="py-3 pr-4 text-right">
+                <tr className="levapos-table-footer">
+                  <td colSpan={6} style={{ textAlign: 'right' }}>
                     {sq.reports.tableFooterTotal}
                   </td>
-                  <td className="py-3 text-lg tabular-nums">€{rangeSalesTotal.total.toFixed(2)}</td>
+                  <td className="levapos-table-footer-total">€{rangeSalesTotal.total.toFixed(2)}</td>
                 </tr>
               </tfoot>
             ) : null}
-          </table>
+          </HTMLTable>
         </div>
       </Card>
     </div>

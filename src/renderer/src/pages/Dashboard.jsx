@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Card } from '../components/Card.jsx'
+import { PageHeader } from '../components/PageHeader.jsx'
 import { api } from '../services/api.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { sq } from '../locale/sq.js'
@@ -34,29 +35,27 @@ export function DashboardPage() {
   const lowStock = user?.role === 'Admin' ? products.filter((p) => p.stockQuantity <= LOW_STOCK).length : null
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">{sq.dashboard.title}</h1>
-        <p className="text-sm text-slate-600">{sq.dashboard.subtitle}</p>
-      </div>
-      {err ? <p className="text-sm text-rose-600">{err}</p> : null}
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="levapos-page">
+      <PageHeader title={sq.dashboard.title} subtitle={sq.dashboard.subtitle} />
+      {err ? <p className="levapos-text-danger">{err}</p> : null}
+      <div className="levapos-grid-4">
         <Card title={sq.dashboard.todaySales} subtitle={sq.dashboard.todaySalesSub}>
-          <div className="text-3xl font-bold text-emerald-700">
-            €{today.totalAmount.toFixed(2)}
-          </div>
+          <div className="levapos-stat-value">€{today.totalAmount.toFixed(2)}</div>
         </Card>
         <Card title={sq.dashboard.salesToday} subtitle={sq.dashboard.salesTodaySub}>
-          <div className="text-3xl font-bold text-slate-900">{today.saleCount}</div>
+          <div className="levapos-stat-value" style={{ color: 'var(--levapos-text)' }}>
+            {today.saleCount}
+          </div>
         </Card>
         {user?.role === 'Admin' ? (
           <>
             <Card title={sq.dashboard.products} subtitle={sq.dashboard.productsSub}>
-              <div className="text-3xl font-bold text-slate-900">{products.length}</div>
+              <div className="levapos-stat-value" style={{ color: 'var(--levapos-text)' }}>
+                {products.length}
+              </div>
             </Card>
             <Card title={sq.dashboard.lowStock} subtitle={sq.dashboard.lowStockSub(LOW_STOCK)}>
-              <div className="text-3xl font-bold text-amber-700">{lowStock ?? 0}</div>
+              <div className="levapos-stat-value levapos-stat-value-warn">{lowStock ?? 0}</div>
             </Card>
           </>
         ) : null}

@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { FormGroup, HTMLSelect, HTMLTable } from '@blueprintjs/core'
 import { Button } from '../components/Button.jsx'
 import { Card } from '../components/Card.jsx'
 import { Input } from '../components/Input.jsx'
 import { Modal } from '../components/Modal.jsx'
+import { PageHeader } from '../components/PageHeader.jsx'
 import { sq } from '../locale/sq.js'
 import { api } from '../services/api.js'
 
@@ -105,36 +107,36 @@ export function UsersPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">{sq.users.title}</h1>
-          <p className="text-sm text-slate-600">{sq.users.subtitle}</p>
-        </div>
-        <Button type="button" size="lg" onClick={openCreate}>
-          {sq.users.addUser}
-        </Button>
-      </div>
-      {err ? <p className="text-sm text-rose-600">{err}</p> : null}
+    <div className="levapos-page">
+      <PageHeader
+        title={sq.users.title}
+        subtitle={sq.users.subtitle}
+        actions={
+          <Button type="button" size="lg" onClick={openCreate}>
+            {sq.users.addUser}
+          </Button>
+        }
+      />
+      {err ? <p className="levapos-text-danger">{err}</p> : null}
       <Card>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+        <div className="levapos-table-wrap">
+          <HTMLTable striped interactive style={{ width: '100%' }}>
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500">
-                <th className="py-2 pr-4 font-medium">{sq.users.colName}</th>
-                <th className="py-2 pr-4 font-medium">{sq.users.colUsername}</th>
-                <th className="py-2 pr-4 font-medium">{sq.users.colRole}</th>
-                <th className="py-2 font-medium"> </th>
+              <tr>
+                <th>{sq.users.colName}</th>
+                <th>{sq.users.colUsername}</th>
+                <th>{sq.users.colRole}</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {rows.map((u) => (
-                <tr key={u.id} className="border-b border-slate-100">
-                  <td className="py-3 pr-4 font-medium text-slate-900">{u.fullName}</td>
-                  <td className="py-3 pr-4 font-mono text-xs">{u.username}</td>
-                  <td className="py-3 pr-4">{sq.roles[u.role] ?? u.role}</td>
-                  <td className="py-3">
-                    <div className="flex flex-wrap gap-2">
+                <tr key={u.id}>
+                  <td>{u.fullName}</td>
+                  <td className="levapos-mono">{u.username}</td>
+                  <td>{sq.roles[u.role] ?? u.role}</td>
+                  <td>
+                    <div className="levapos-row">
                       <Button type="button" size="sm" variant="secondary" onClick={() => openEdit(u)}>
                         {sq.common.edit}
                       </Button>
@@ -146,7 +148,7 @@ export function UsersPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </HTMLTable>
         </div>
       </Card>
 
@@ -165,7 +167,7 @@ export function UsersPage() {
           </>
         }
       >
-        <form id="user-form" className="space-y-3" onSubmit={saveUser}>
+        <form id="user-form" onSubmit={saveUser}>
           <Input
             label={sq.users.fullName}
             value={form.fullName}
@@ -178,15 +180,17 @@ export function UsersPage() {
             onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
             required
           />
-          <label className="block text-sm font-medium text-slate-700">{sq.users.role}</label>
-          <select
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-            value={form.role}
-            onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-          >
-            <option value="Cashier">{sq.roles.Cashier}</option>
-            <option value="Admin">{sq.roles.Admin}</option>
-          </select>
+          <FormGroup label={sq.users.role}>
+            <HTMLSelect
+              fill
+              value={form.role}
+              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+              options={[
+                { label: sq.roles.Cashier, value: 'Cashier' },
+                { label: sq.roles.Admin, value: 'Admin' },
+              ]}
+            />
+          </FormGroup>
           <Input
             label={editing ? sq.users.passwordOptional : sq.users.password}
             type="password"

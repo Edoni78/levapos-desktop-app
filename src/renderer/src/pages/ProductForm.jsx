@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/Button.jsx'
 import { Card } from '../components/Card.jsx'
 import { Input } from '../components/Input.jsx'
+import { PageHeader } from '../components/PageHeader.jsx'
 import { sq } from '../locale/sq.js'
 import { api } from '../services/api.js'
 
@@ -80,23 +81,23 @@ export function ProductFormPage() {
   }
 
   if (loading) {
-    return <div className="text-slate-500">{sq.loading}</div>
+    return <p className="levapos-text-muted">{sq.loading}</p>
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-slate-900">
-          {isEdit ? sq.productForm.edit : sq.productForm.add}
-        </h1>
-        <Link to="/products">
-          <Button type="button" variant="secondary">
-            {sq.common.back}
-          </Button>
-        </Link>
-      </div>
+    <div className="levapos-page levapos-form-narrow">
+      <PageHeader
+        title={isEdit ? sq.productForm.edit : sq.productForm.add}
+        actions={
+          <Link to="/products" style={{ textDecoration: 'none' }}>
+            <Button type="button" variant="secondary">
+              {sq.common.back}
+            </Button>
+          </Link>
+        }
+      />
       <Card>
-        <form className="space-y-4" onSubmit={onSubmit}>
+        <form onSubmit={onSubmit}>
           <Input label={sq.productForm.name} value={name} onChange={(e) => setName(e.target.value)} required />
           <Input
             label={sq.productForm.barcode}
@@ -122,8 +123,8 @@ export function ProductFormPage() {
             onChange={(e) => setStock(e.target.value)}
             required
           />
-          {err ? <p className="text-sm text-rose-600">{err}</p> : null}
-          <div className="flex justify-end gap-2">
+          {err ? <p className="levapos-text-danger">{err}</p> : null}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
             <Button type="submit" size="lg">
               {sq.productForm.save}
             </Button>

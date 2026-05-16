@@ -1,4 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { Spinner } from '@blueprintjs/core'
 import { useAuth } from '../hooks/useAuth.js'
 import { sq } from '../locale/sq.js'
 
@@ -8,8 +9,9 @@ export function ProtectedRoute({ children, adminOnly }) {
 
   if (booting) {
     return (
-      <div className="flex h-full items-center justify-center text-slate-500">
-        {sq.loading}
+      <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+        <Spinner size={40} />
+        <span className="levapos-text-muted" style={{ marginLeft: 12 }}>{sq.loading}</span>
       </div>
     )
   }

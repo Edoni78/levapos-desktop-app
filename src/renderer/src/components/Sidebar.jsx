@@ -1,20 +1,21 @@
 import { NavLink } from 'react-router-dom'
+import { Menu, MenuItem } from '@blueprintjs/core'
 import { useAuth } from '../hooks/useAuth.js'
 import { sq } from '../locale/sq.js'
 
 const adminNav = [
-  { to: '/dashboard', label: sq.nav.dashboard },
-  { to: '/pos', label: sq.nav.pos },
-  { to: '/products', label: sq.nav.products },
-  { to: '/users', label: sq.nav.users },
-  { to: '/reports', label: sq.nav.reports },
-  { to: '/settings', label: sq.nav.settings },
+  { to: '/dashboard', label: sq.nav.dashboard, icon: 'dashboard' },
+  { to: '/pos', label: sq.nav.pos, icon: 'shopping-cart' },
+  { to: '/products', label: sq.nav.products, icon: 'box' },
+  { to: '/users', label: sq.nav.users, icon: 'people' },
+  { to: '/reports', label: sq.nav.reports, icon: 'chart' },
+  { to: '/settings', label: sq.nav.settings, icon: 'cog' },
 ]
 
 const cashierNav = [
-  { to: '/dashboard', label: sq.nav.dashboard },
-  { to: '/pos', label: sq.nav.pos },
-  { to: '/settings', label: sq.nav.settings },
+  { to: '/dashboard', label: sq.nav.dashboard, icon: 'dashboard' },
+  { to: '/pos', label: sq.nav.pos, icon: 'shopping-cart' },
+  { to: '/settings', label: sq.nav.settings, icon: 'cog' },
 ]
 
 export function Sidebar() {
@@ -22,30 +23,19 @@ export function Sidebar() {
   const links = user?.role === 'Admin' ? adminNav : cashierNav
 
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r border-slate-200 bg-white">
-      <div className="border-b border-slate-100 px-4 py-5">
-        <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-          {sq.sidebar.brand}
-        </div>
-        <div className="mt-1 text-lg font-bold text-slate-900">{sq.sidebar.market}</div>
+    <aside className="levapos-sidebar">
+      <div className="levapos-sidebar-brand">
+        <div className="levapos-sidebar-brand-sub">{sq.sidebar.brand}</div>
       </div>
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      <Menu className="levapos-sidebar-menu">
         {links.map((l) => (
-          <NavLink
-            key={l.to}
-            to={l.to}
-            className={({ isActive }) =>
-              `rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                isActive
-                  ? 'bg-emerald-50 text-emerald-900'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`
-            }
-          >
-            {l.label}
+          <NavLink key={l.to} to={l.to} style={{ textDecoration: 'none' }}>
+            {({ isActive }) => (
+              <MenuItem icon={l.icon} text={l.label} active={isActive} />
+            )}
           </NavLink>
         ))}
-      </nav>
+      </Menu>
     </aside>
   )
 }

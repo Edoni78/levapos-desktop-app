@@ -1,5 +1,5 @@
 /**
- * Albanian (sq) UI strings — Leva POS
+ * Albanian (sq) UI strings — PAPI FREESHOP
  */
 export const sq = {
   roles: {
@@ -19,8 +19,7 @@ export const sq = {
     logout: 'Dil',
   },
   sidebar: {
-    brand: 'Leva POS',
-    market: 'Market',
+    brand: 'PAPI FREESHOP',
   },
   modal: {
     close: 'Mbyll',
@@ -40,7 +39,7 @@ export const sq = {
     euro: '€',
   },
   login: {
-    title: 'Leva POS',
+    title: 'PAPI FREESHOP',
     subtitle: 'Hyni për të vazhduar',
     username: 'Emri i përdoruesit',
     password: 'Fjalëkalimi',
@@ -64,8 +63,6 @@ export const sq = {
   },
   pos: {
     title: 'POS',
-    subtitle:
-      'Totali dhe kushuriri (i madh) shfaqen poshtë produkteve të shpejta — pagesa dhe tastiera në të djathtë',
     clearCart: 'Zbraz shportën',
     finishSale: 'Përfundo shitjen',
     productNotFound: 'Produkti nuk u gjet',
@@ -193,7 +190,7 @@ export const sq = {
   settings: {
     title: 'Cilësimet',
     subtitle: 'POS lokal për desktop',
-    aboutTitle: 'Rreth Leva POS',
+    aboutTitle: 'Rreth PAPI FREESHOP',
     about1:
       'Skedari i bazës së të dhënave SQLite: database/market_pos.db në dosjen e aplikacionit (zhvillim).',
     about2:
@@ -204,7 +201,7 @@ export const sq = {
       'Fjalëkalimet ruhen me hash të përputhshëm me bcrypt (bcryptjs). Pamja e aplikacionit nuk lidhet drejtpërdrejt me SQLite; vetëm procesi kryesor i Electron përdor bazën përmes IPC.',
   },
   api: {
-    mustRunInElectron: 'Leva POS duhet të ekzekutohet brenda Electron',
+    mustRunInElectron: 'PAPI FREESHOP duhet të ekzekutohet brenda Electron',
     requestFailed: 'Kërkesa dështoi',
   },
   /** Për krahasim me mesazhet nga API */

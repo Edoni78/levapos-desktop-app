@@ -1,8 +1,8 @@
 {
   "name": "levapos",
   "version": "1.0.0",
-  "description": "Leva POS — aplikacion desktop për shitje (Electron + React)",
-  "author": "Leva POS",
+  "description": "PAPI FREESHOP — aplikacion desktop për shitje (Electron + React)",
+  "author": "PAPI FREESHOP",
   "private": true,
   "type": "module",
   "main": "src/main/main.js",
@@ -17,14 +17,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.3.0",
+    "@blueprintjs/core": "^5.19.1",
+    "@blueprintjs/icons": "^5.23.0",
     "bcryptjs": "^3.0.3",
     "exceljs": "^4.4.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.0",
-    "sql.js": "^1.14.1",
-    "tailwindcss": "^4.3.0"
+    "sql.js": "^1.14.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -46,7 +46,7 @@
   },
   "build": {
     "appId": "com.levapos.desktop",
-    "productName": "Leva POS",
+    "productName": "PAPI FREESHOP",
     "copyright": "Copyright © 2026",
     "forceCodeSigning": false,
     "directories": {

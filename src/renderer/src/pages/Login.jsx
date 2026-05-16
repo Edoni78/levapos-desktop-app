@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
+import { Card, FormGroup, InputGroup } from '@blueprintjs/core'
 import { Button } from '../components/Button.jsx'
-import { Input } from '../components/Input.jsx'
 import { useAuth } from '../hooks/useAuth.js'
 import { sq } from '../locale/sq.js'
 
@@ -32,36 +32,40 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-slate-100 p-6">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">{sq.login.title}</h1>
-        <p className="mt-2 text-sm text-slate-600">{sq.login.subtitle}</p>
-        <form className="mt-8 space-y-4" onSubmit={onSubmit}>
-          <Input
-            label={sq.login.username}
-            name="username"
-            autoComplete="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <Input
-            label={sq.login.password}
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-          <Button type="submit" className="w-full" size="lg" disabled={busy}>
+    <div className="levapos-login-wrap">
+      <Card className="levapos-login-card" elevation={2}>
+        <h1 className="levapos-page-title">{sq.login.title}</h1>
+        <p className="levapos-page-subtitle">{sq.login.subtitle}</p>
+        <form onSubmit={onSubmit} style={{ marginTop: 24 }}>
+          <FormGroup label={sq.login.username}>
+            <InputGroup
+              name="username"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              large
+            />
+          </FormGroup>
+          <FormGroup label={sq.login.password}>
+            <InputGroup
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              large
+            />
+          </FormGroup>
+          {error ? <p className="levapos-text-danger">{error}</p> : null}
+          <Button type="submit" size="lg" disabled={busy} style={{ width: '100%', marginTop: 8 }}>
             {busy ? sq.login.signingIn : sq.login.signIn}
           </Button>
         </form>
-        <p className="mt-6 text-xs text-slate-500">
-          {sq.login.defaultHint} <span className="font-mono">admin</span> /{' '}
-          <span className="font-mono">admin123</span>
+        <p className="levapos-text-xs" style={{ marginTop: 24 }}>
+          {sq.login.defaultHint}{' '}
+          <span className="levapos-mono">admin</span> / <span className="levapos-mono">admin123</span>
         </p>
-      </div>
+      </Card>
     </div>
   )
 }

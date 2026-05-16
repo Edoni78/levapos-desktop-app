@@ -1,22 +1,20 @@
 import { Card } from '../components/Card.jsx'
+import { PageHeader } from '../components/PageHeader.jsx'
 import { sq } from '../locale/sq.js'
 
 export function SettingsPage() {
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">{sq.settings.title}</h1>
-        <p className="text-sm text-slate-600">{sq.settings.subtitle}</p>
-      </div>
+    <div className="levapos-page">
+      <PageHeader title={sq.settings.title} subtitle={sq.settings.subtitle} />
       <Card title={sq.settings.aboutTitle}>
-        <ul className="list-inside list-disc space-y-2 text-sm text-slate-700">
-          <li>{sq.settings.about1}</li>
-          <li>{sq.settings.about2}</li>
-          <li>{sq.settings.about3}</li>
+        <ul style={{ margin: 0, paddingLeft: 20 }}>
+          <li className="levapos-text-muted" style={{ marginBottom: 8 }}>{sq.settings.about1}</li>
+          <li className="levapos-text-muted" style={{ marginBottom: 8 }}>{sq.settings.about2}</li>
+          <li className="levapos-text-muted">{sq.settings.about3}</li>
         </ul>
       </Card>
       <Card title={sq.settings.securityTitle}>
-        <p className="text-sm text-slate-700">{sq.settings.securityBody}</p>
+        <p className="levapos-text-muted" style={{ margin: 0 }}>{sq.settings.securityBody}</p>
       </Card>
     </div>
   )

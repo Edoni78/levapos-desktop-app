@@ -55,8 +55,21 @@ function distributeCartToTotal(lines, target) {
   })
 }
 
+const CART_STORAGE_PREFIX = 'levapos.pos.cart.'
+
+function loadStoredCart(key) {
+  try {
+    const raw = window.localStorage.getItem(key)
+    const parsed = raw ? JSON.parse(raw) : null
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 export function PosPage() {
   const { user } = useAuth()
+  const cartStorageKey = `${CART_STORAGE_PREFIX}${user?.id ?? 'anon'}`
   const barcodeRef = useRef(null)
   const nameSearchRef = useRef(null)
   const tenderRef = useRef(null)
@@ -66,7 +79,7 @@ export function PosPage() {
   const [nameResults, setNameResults] = useState([])
   const [tender, setTender] = useState('')
   const [lastLookup, setLastLookup] = useState('')
-  const [cart, setCart] = useState([])
+  const [cart, setCart] = useState(() => loadStoredCart(cartStorageKey))
   const [totalText, setTotalText] = useState(null)
   const [banner, setBanner] = useState('')
   const [busy, setBusy] = useState(false)
@@ -81,6 +94,14 @@ export function PosPage() {
   }, [saleHistoryBrowse])
 
   const isBrowsingSales = saleHistoryBrowse != null
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(cartStorageKey, JSON.stringify(cart))
+    } catch {
+      /* localStorage e paarritshme — vazhdojmë pa e ruajtur */
+    }
+  }, [cart, cartStorageKey])
 
   const cartTotal = useMemo(
     () =>
@@ -500,8 +521,40 @@ export function PosPage() {
     focusBarcode()
   }, [focusBarcode])
 
-  const finishSale = useCallback(async () => {
+  // Hapi 1: shfaq faturën për konfirmim (asnjë shitje s'regjistrohet ende, shporta mbetet).
+  const requestFinish = useCallback(() => {
     if (cart.length === 0) return
+    const hasPending = totalText != null
+    const target = hasPending ? roundMoney(parseMoneyInput(totalText)) : null
+    const lines = hasPending ? distributeCartToTotal(cart, target) : cart
+    if (hasPending) {
+      setCart(lines)
+      setTotalText(null)
+    }
+    const total =
+      Math.round(
+        lines.reduce((s, l) => s + lineTotal(linePrice(l), l.quantity), 0) * 100,
+      ) / 100
+    setBanner('')
+    setReceipt({
+      pending: true,
+      sale: { id: null, totalAmount: total },
+      items: lines.map((l) => ({
+        productName: l.product.name,
+        barcode: l.product.barcode,
+        quantity: l.quantity,
+        unitPrice: linePrice(l),
+        lineTotal: lineTotal(linePrice(l), l.quantity),
+      })),
+    })
+  }, [cart, totalText])
+
+  // Hapi 2: konfirmohet — tani regjistrohet shitja dhe zbrazet shporta.
+  const confirmSale = useCallback(async () => {
+    if (cart.length === 0) {
+      setReceipt(null)
+      return
+    }
     setBusy(true)
     setBanner('')
     try {
@@ -511,38 +564,48 @@ export function PosPage() {
         unitPrice: linePrice(l),
       }))
       const totalOverride =
-        totalText == null
-          ? Math.round(
-              cart.reduce((s, l) => s + lineTotal(linePrice(l), l.quantity), 0) * 100,
-            ) / 100
-          : roundMoney(parseMoneyInput(totalText))
-      const res = await api.salesCreate({ items, totalOverride })
-      setReceipt(res)
+        Math.round(
+          cart.reduce((s, l) => s + lineTotal(linePrice(l), l.quantity), 0) * 100,
+        ) / 100
+      await api.salesCreate({ items, totalOverride })
+      setReceipt(null)
       setCart([])
       setTender('')
       setChangeInfo(null)
       setTotalText(null)
       focusBarcode()
     } catch (e) {
+      setReceipt(null)
       setBanner(e instanceof Error ? e.message : sq.pos.saleFailed)
     } finally {
       setBusy(false)
     }
-  }, [cart, totalText, focusBarcode])
+  }, [cart, focusBarcode])
+
+  // Anulon konfirmimin: shporta nuk preket, asnjë shitje s'bëhet.
+  const cancelFinish = useCallback(() => {
+    setReceipt(null)
+    focusBarcode()
+  }, [focusBarcode])
 
   useEffect(() => {
-    if (receipt || isBrowsingSales) return
+    if (isBrowsingSales) return
 
     function onKeyDown(e) {
       if (e.key !== 'Escape') return
       e.preventDefault()
       e.stopPropagation()
-      if (!busy && cart.length > 0) void finishSale()
+      if (busy) return
+      if (receipt) {
+        void confirmSale()
+        return
+      }
+      if (cart.length > 0) requestFinish()
     }
 
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [receipt, isBrowsingSales, busy, cart.length, finishSale])
+  }, [isBrowsingSales, busy, receipt, cart.length, confirmSale, requestFinish])
 
   useEffect(() => {
     if (receipt) return
@@ -604,7 +667,7 @@ export function PosPage() {
               type="button"
               size="lg"
               disabled={busy || cart.length === 0 || isBrowsingSales}
-              onClick={finishSale}
+              onClick={requestFinish}
             >
               {sq.pos.finishSale}
             </Button>
@@ -967,19 +1030,21 @@ export function PosPage() {
       <Modal
         open={!!receipt}
         title={sq.pos.receipt}
-        onClose={() => setReceipt(null)}
+        onClose={cancelFinish}
         footer={
-          <Button type="button" onClick={() => setReceipt(null)}>
+          <Button type="button" onClick={() => void confirmSale()} disabled={busy}>
             {sq.pos.nextCustomer}
           </Button>
         }
       >
         {receipt ? (
           <div style={{ fontSize: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span className="levapos-text-muted">{sq.pos.saleId}</span>
-              <span className="levapos-mono"><strong>{receipt.sale.id}</strong></span>
-            </div>
+            {receipt.sale.id != null ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span className="levapos-text-muted">{sq.pos.saleId}</span>
+                <span className="levapos-mono"><strong>{receipt.sale.id}</strong></span>
+              </div>
+            ) : null}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
               <span className="levapos-text-muted">{sq.pos.total}</span>
               <span className="levapos-amount-lg" style={{ fontSize: '1.25rem' }}>

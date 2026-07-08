@@ -2,17 +2,33 @@ import { allRows, getRow, run, persist, lastInsertRowId } from '../db.js'
 import { ERR } from '../locale/sq.js'
 import { getSessionUser } from '../session.js'
 
+function roundMoney(n) {
+  return Math.round(n * 100) / 100
+}
+
 function mapProduct(row) {
   if (!row) return null
+  const price = Number(row.price)
+  const costPrice = Number(row.cost_price ?? 0)
+  const profit = roundMoney(price - costPrice)
   return {
     id: Number(row.id),
     name: row.name,
     barcode: row.barcode,
-    price: Number(row.price),
+    price,
+    costPrice,
+    profit,
     stockQuantity: Number(row.stock_quantity),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+}
+
+function parseCostPrice(payload, existingRow) {
+  if (payload?.costPrice !== undefined) return Number(payload.costPrice)
+  if (payload?.cost_price !== undefined) return Number(payload.cost_price)
+  if (existingRow) return Number(existingRow.cost_price ?? 0)
+  return 0
 }
 
 function requireAdmin() {
@@ -39,6 +55,27 @@ export function getAllProducts(payload = {}) {
       `SELECT * FROM products WHERE stock_quantity > 0
        ORDER BY name COLLATE NOCASE LIMIT ?`,
       [limit],
+    )
+    return rows.map(mapProduct)
+  }
+
+  if (payload?.posSearch === true) {
+    requireAuth()
+    const q = String(payload?.search ?? '').trim()
+    if (q.length < 2) return []
+    const esc = q.replace(/[%_]/g, '')
+    if (!esc) return []
+    const like = `%${esc}%`
+    const rawLimit = Number(payload?.limit)
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(Math.max(Math.floor(rawLimit), 1), 30)
+      : 15
+    const rows = allRows(
+      `SELECT * FROM products
+       WHERE name LIKE ? COLLATE NOCASE OR barcode LIKE ? COLLATE NOCASE
+       ORDER BY name COLLATE NOCASE
+       LIMIT ?`,
+      [like, like, limit],
     )
     return rows.map(mapProduct)
   }
@@ -79,11 +116,13 @@ export function createProduct(payload) {
   const name = String(payload?.name ?? '').trim()
   const barcode = String(payload?.barcode ?? '').trim()
   const price = Number(payload?.price)
+  const costPrice = parseCostPrice(payload)
   const stockQuantity = Number(payload?.stockQuantity ?? payload?.stock ?? 0)
 
   if (!name || name.length > 200) throw new Error(ERR.invalidProductName)
   if (!barcode || barcode.length > 64) throw new Error(ERR.invalidBarcode)
   if (!Number.isFinite(price) || price < 0) throw new Error(ERR.invalidPrice)
+  if (!Number.isFinite(costPrice) || costPrice < 0) throw new Error(ERR.invalidPrice)
   if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
     throw new Error(ERR.invalidStock)
   }
@@ -95,9 +134,9 @@ export function createProduct(payload) {
 
   const now = new Date().toISOString()
   run(
-    `INSERT INTO products (name, barcode, price, stock_quantity, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [name, barcode, price, stockQuantity, now, now],
+    `INSERT INTO products (name, barcode, price, cost_price, stock_quantity, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [name, barcode, price, costPrice, stockQuantity, now, now],
   )
   persist()
   const id = lastInsertRowId()
@@ -122,6 +161,7 @@ export function updateProduct(payload) {
       : existing.barcode
   const price =
     payload?.price !== undefined ? Number(payload.price) : Number(existing.price)
+  const costPrice = parseCostPrice(payload, existing)
   const stockQuantity =
     payload?.stockQuantity !== undefined
       ? Number(payload.stockQuantity)
@@ -130,6 +170,7 @@ export function updateProduct(payload) {
   if (!name || name.length > 200) throw new Error(ERR.invalidProductName)
   if (!barcode || barcode.length > 64) throw new Error(ERR.invalidBarcode)
   if (!Number.isFinite(price) || price < 0) throw new Error(ERR.invalidPrice)
+  if (!Number.isFinite(costPrice) || costPrice < 0) throw new Error(ERR.invalidPrice)
   if (!Number.isInteger(stockQuantity) || stockQuantity < 0) {
     throw new Error(ERR.invalidStock)
   }
@@ -142,9 +183,9 @@ export function updateProduct(payload) {
 
   const now = new Date().toISOString()
   run(
-    `UPDATE products SET name = ?, barcode = ?, price = ?, stock_quantity = ?, updated_at = ?
+    `UPDATE products SET name = ?, barcode = ?, price = ?, cost_price = ?, stock_quantity = ?, updated_at = ?
      WHERE id = ?`,
-    [name, barcode, price, stockQuantity, now, id],
+    [name, barcode, price, costPrice, stockQuantity, now, id],
   )
   persist()
   return mapProduct(getRow('SELECT * FROM products WHERE id = ?', [id]))

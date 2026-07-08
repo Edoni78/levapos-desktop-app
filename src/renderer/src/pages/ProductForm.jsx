@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Button } from '../components/Button.jsx'
 import { Card } from '../components/Card.jsx'
@@ -6,6 +6,13 @@ import { Input } from '../components/Input.jsx'
 import { PageHeader } from '../components/PageHeader.jsx'
 import { sq } from '../locale/sq.js'
 import { api } from '../services/api.js'
+
+function parseMoneyField(s) {
+  const t = String(s ?? '').trim().replace(',', '.')
+  if (!t) return 0
+  const n = Number.parseFloat(t)
+  return Number.isFinite(n) ? n : NaN
+}
 
 export function ProductFormPage() {
   const { id } = useParams()
@@ -17,10 +24,18 @@ export function ProductFormPage() {
   const [barcode, setBarcode] = useState(
     () => (isEdit ? '' : (searchParams.get('barcode') ?? '')),
   )
-  const [price, setPrice] = useState('')
+  const [costPrice, setCostPrice] = useState('')
+  const [sellingPrice, setSellingPrice] = useState('')
   const [stock, setStock] = useState('')
   const [err, setErr] = useState('')
   const [loading, setLoading] = useState(isEdit)
+
+  const profitPreview = useMemo(() => {
+    const sell = parseMoneyField(sellingPrice)
+    const cost = parseMoneyField(costPrice)
+    if (!Number.isFinite(sell) || !Number.isFinite(cost)) return null
+    return Math.round((sell - cost) * 100) / 100
+  }, [sellingPrice, costPrice])
 
   useEffect(() => {
     if (!isEdit) return
@@ -35,7 +50,8 @@ export function ProductFormPage() {
           if (!cancelled) {
             setName(p.name)
             setBarcode(p.barcode)
-            setPrice(String(p.price))
+            setCostPrice(String(p.costPrice ?? 0))
+            setSellingPrice(String(p.price))
             setStock(String(p.stockQuantity))
           }
         } catch (e) {
@@ -55,22 +71,29 @@ export function ProductFormPage() {
   async function onSubmit(e) {
     e.preventDefault()
     setErr('')
+    const costNum = parseMoneyField(costPrice)
+    const sellNum = parseMoneyField(sellingPrice)
+    const stockNum = Number(stock)
+    if (!Number.isFinite(costNum) || costNum < 0 || !Number.isFinite(sellNum) || sellNum < 0) {
+      setErr(sq.productForm.saveFailed)
+      return
+    }
     try {
-      const priceNum = Number(price)
-      const stockNum = Number(stock)
       if (isEdit) {
         await api.productsUpdate({
           id: Number(id),
           name,
           barcode,
-          price: priceNum,
+          costPrice: costNum,
+          price: sellNum,
           stockQuantity: stockNum,
         })
       } else {
         await api.productsCreate({
           name,
           barcode,
-          price: priceNum,
+          costPrice: costNum,
+          price: sellNum,
           stockQuantity: stockNum,
         })
       }
@@ -106,14 +129,32 @@ export function ProductFormPage() {
             required
           />
           <Input
-            label={sq.productForm.price}
-            type="number"
-            min="0"
-            step="0.01"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
+            label={sq.productForm.costPrice}
+            inputMode="decimal"
+            autoComplete="off"
+            value={costPrice}
+            onChange={(e) => setCostPrice(e.target.value)}
             required
           />
+          <Input
+            label={sq.productForm.sellingPrice}
+            inputMode="decimal"
+            autoComplete="off"
+            value={sellingPrice}
+            onChange={(e) => setSellingPrice(e.target.value)}
+            required
+          />
+          {profitPreview != null ? (
+            <p
+              className={
+                profitPreview < 0
+                  ? 'levapos-product-profit-preview levapos-text-danger'
+                  : 'levapos-product-profit-preview levapos-text-success'
+              }
+            >
+              {sq.productForm.profitPreview(profitPreview)}
+            </p>
+          ) : null}
           <Input
             label={sq.productForm.stock}
             type="number"

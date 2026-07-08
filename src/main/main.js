@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,9 +10,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.levapos.desktop')
+}
+
 /** Baza SQLite duhet të jetë e shkrueshme — jo brenda app.asar */
 function getDataRoot() {
-  if (app.isPackaged) return path.join(app.getPath('userData'), 'LevaPOS')
+  if (app.isPackaged) return path.join(app.getPath('userData'), 'LEVA FREESHOP')
   return app.getAppPath()
 }
 
@@ -20,12 +25,26 @@ function getRendererUrl() {
   return path.join(app.getAppPath(), 'dist', 'renderer', 'index.html')
 }
 
+/** Ikona e aplikacionit — taskbar / dritare (dev + release) */
+function getAppIconPath() {
+  const candidates = [
+    path.join(process.resourcesPath, 'assets', 'atm.png'),
+    path.join(app.getAppPath(), 'src', 'assets', 'atm.png'),
+  ]
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p
+  }
+  return undefined
+}
+
 async function createWindow() {
+  const iconPath = getAppIconPath()
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 1024,
     minHeight: 640,
+    ...(iconPath ? { icon: iconPath } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -46,6 +65,11 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  const iconPath = getAppIconPath()
+  if (iconPath && process.platform === 'darwin' && app.dock) {
+    app.dock.setIcon(iconPath)
+  }
+
   await initDatabase(getDataRoot())
   seedDefaultAdmin()
   registerIpcHandlers()

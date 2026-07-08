@@ -61,10 +61,6 @@ export function LoginPage() {
             {busy ? sq.login.signingIn : sq.login.signIn}
           </Button>
         </form>
-        <p className="levapos-text-xs" style={{ marginTop: 24 }}>
-          {sq.login.defaultHint}{' '}
-          <span className="levapos-mono">admin</span> / <span className="levapos-mono">admin123</span>
-        </p>
       </Card>
     </div>
   )

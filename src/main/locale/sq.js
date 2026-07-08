@@ -34,6 +34,9 @@ export const ERR = {
   invalidQuantity: 'Sasi e pavlefshme',
   insufficientStock: (name) => `Stoku nuk mjafton për: ${name}`,
   saleNotRecorded: 'Shitja nuk u regjistrua',
+  adminPasswordRequired: 'Kërkohet fjalëkalimi i administratorit',
+  invalidAdminPassword: 'Fjalëkalimi i administratorit është i gabuar',
+  noSalesInRange: 'Nuk ka shitje për të fshirë në këtë interval',
 }
 
 /** Tekste për eksporte Excel */
@@ -65,7 +68,9 @@ export const EXCEL = {
       { header: 'Nr.', key: 'id', width: 8 },
       { header: 'Emri', key: 'name', width: 30 },
       { header: 'Barkodi', key: 'barcode', width: 18 },
-      { header: 'Çmimi (€)', key: 'price', width: 12 },
+      { header: 'Blerje (€)', key: 'costPrice', width: 12 },
+      { header: 'Shitje (€)', key: 'price', width: 12 },
+      { header: 'Fitim (€)', key: 'profit', width: 12 },
       { header: 'Stoku', key: 'stock', width: 10 },
       { header: 'Krijuar më', key: 'created', width: 22 },
       { header: 'Përditësuar më', key: 'updated', width: 22 },

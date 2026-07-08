@@ -53,11 +53,19 @@
 /* Sidebar */
 .levapos-sidebar {
   display: flex;
-  width: 220px;
   flex-shrink: 0;
   flex-direction: column;
   background: var(--levapos-sidebar);
   color: #fff;
+  transition: width 0.2s ease;
+}
+
+.levapos-sidebar--collapsed {
+  width: 56px;
+}
+
+.levapos-sidebar--expanded {
+  width: 220px;
 }
 
 .levapos-sidebar-brand {
@@ -81,45 +89,87 @@
   color: #fff;
 }
 
-.levapos-sidebar-menu.bp5-menu {
+.levapos-sidebar-toggle {
   display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px 10px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   background: transparent;
-  box-shadow: none;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
 }
 
-.levapos-sidebar-menu > a {
-  display: block;
-  text-decoration: none;
-}
-
-.levapos-sidebar-menu .bp5-menu-item {
-  border-radius: 6px;
-  padding: 10px 12px;
-  font-size: 17px;
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.levapos-sidebar-menu .bp5-menu-item .bp5-icon {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.levapos-sidebar-menu .bp5-menu-item:hover {
+.levapos-sidebar-toggle:hover {
   background: var(--levapos-sidebar-hover);
   color: #fff;
 }
 
-.levapos-sidebar-menu .bp5-menu-item.bp5-active {
+.levapos-sidebar-nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 6px 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.levapos-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.88);
+  transition: background 0.15s ease;
+}
+
+.levapos-sidebar--collapsed .levapos-sidebar-link {
+  justify-content: center;
+  padding: 0;
+  width: 44px;
+  margin: 0 auto;
+}
+
+.levapos-sidebar-link:hover {
+  background: var(--levapos-sidebar-hover);
+  color: #fff;
+}
+
+.levapos-sidebar-link--active {
   background: var(--levapos-sidebar-active);
   color: #fff;
 }
 
-.levapos-sidebar-menu .bp5-menu-item.bp5-active .bp5-icon {
+.levapos-sidebar-link-icon.bp5-icon {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.levapos-sidebar-link--active .levapos-sidebar-link-icon.bp5-icon,
+.levapos-sidebar-link:hover .levapos-sidebar-link-icon.bp5-icon {
   color: #fff;
+}
+
+.levapos-sidebar-link-label {
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.levapos-sidebar--expanded .levapos-sidebar-link {
+  padding-right: 12px;
 }
 
 .levapos-topbar {
@@ -286,6 +336,73 @@
   grid-template-columns: 1fr 1fr;
 }
 
+.levapos-pos-input-barcode {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.levapos-pos-name-search {
+  position: relative;
+}
+
+.levapos-pos-name-search .bp5-form-group {
+  margin-bottom: 0;
+}
+
+.levapos-pos-name-results {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  max-height: 220px;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  list-style: none;
+  border-radius: 6px;
+  background: var(--levapos-surface);
+  border: 1px solid rgba(16, 22, 26, 0.12);
+  box-shadow: 0 4px 16px rgba(16, 22, 26, 0.12);
+}
+
+.levapos-pos-name-results-empty {
+  padding: 10px 12px;
+  font-size: 0.875rem;
+  color: var(--levapos-text-muted);
+}
+
+.levapos-pos-name-result-btn {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.levapos-pos-name-result-btn:hover {
+  background: var(--levapos-primary-muted);
+}
+
+.levapos-pos-name-result-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--levapos-text);
+}
+
+.levapos-pos-name-result-meta {
+  font-size: 0.75rem;
+  color: var(--levapos-text-muted);
+  font-family: ui-monospace, monospace;
+}
+
 .levapos-pos-barcode-row {
   display: flex;
   gap: 8px;
@@ -300,6 +417,25 @@
 
 .levapos-pos-input-payment .bp5-form-group {
   margin-bottom: 0;
+}
+
+.levapos-pos-last-sale-mode .levapos-pos-inputs,
+.levapos-pos-last-sale-mode .levapos-pos-quick-sidebar {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.levapos-last-sale-callout {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.levapos-last-sale-meta {
+  margin: 0 0 8px;
+  padding: 0 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--levapos-text-muted);
 }
 
 .levapos-pos-workspace {
@@ -377,6 +513,36 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.levapos-cart-price-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.levapos-cart-price-euro {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--levapos-text-muted);
+}
+
+.levapos-cart-price-input {
+  width: 5.5rem;
+  padding: 6px 8px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--levapos-text);
+  background: #fff;
+  border: 1px solid var(--levapos-primary-border, #b8daf0);
+  border-radius: 6px;
+  outline: none;
+}
+
+.levapos-cart-price-input:focus {
+  border-color: var(--levapos-primary);
+  box-shadow: 0 0 0 2px rgba(43, 143, 217, 0.25);
 }
 
 .levapos-cart-line-total {
@@ -500,6 +666,13 @@
   font-size: 70px;
 }
 
+.levapos-pos-page
+  .levapos-cart-totals
+  .levapos-total-card:nth-child(2)
+  .levapos-amount-lg:not(.levapos-amount-warn):not(.levapos-amount-muted) {
+  color: var(--levapos-danger);
+}
+
 .levapos-stat-value {
   font-size: 1.75rem;
   font-weight: 700;
@@ -515,6 +688,39 @@
   font-weight: 800;
   line-height: 1;
   color: var(--levapos-primary);
+}
+
+.levapos-total-edit {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.levapos-total-edit-euro {
+  flex: none;
+}
+
+.levapos-total-edit-input {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  line-height: inherit;
+  color: inherit;
+  text-align: center;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  outline: none;
+  appearance: none;
+}
+
+.levapos-total-edit-input:focus {
+  border-bottom-color: var(--levapos-primary);
 }
 
 .levapos-amount-warn {
@@ -686,6 +892,153 @@
   color: var(--levapos-primary);
 }
 
+/* Reports — period filters */
+.levapos-reports-filters-card.bp5-card {
+  border: 1px solid var(--levapos-primary-border);
+}
+
+.levapos-reports-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.levapos-reports-filter-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.levapos-reports-filter-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--levapos-text-muted);
+}
+
+.levapos-reports-preset-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.levapos-reports-preset-btn.bp5-button {
+  min-width: 7rem;
+  font-weight: 600;
+}
+
+.levapos-reports-range-display {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--levapos-primary-border);
+  background: linear-gradient(180deg, #fff 0%, var(--levapos-primary-muted) 100%);
+}
+
+.levapos-reports-range-display-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--levapos-text-muted);
+}
+
+.levapos-reports-range-display-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--levapos-text);
+}
+
+.levapos-reports-loading {
+  font-size: 0.8rem;
+  color: var(--levapos-text-muted);
+  font-style: italic;
+}
+
+.levapos-reports-custom-dates {
+  padding-top: 4px;
+  border-top: 1px solid var(--levapos-primary-border);
+}
+
+.levapos-reports-date-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.levapos-reports-date-row .bp5-form-group {
+  margin-bottom: 0;
+  min-width: 160px;
+}
+
+.levapos-reports-date-sep {
+  padding-bottom: 10px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--levapos-text-muted);
+}
+
+.levapos-reports-export-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(16, 22, 26, 0.08);
+}
+
+.levapos-reports-clear-meta {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--levapos-text-muted);
+}
+
+.levapos-reports-summary {
+  padding: 20px 24px;
+}
+
+.levapos-reports-summary-period {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--levapos-text-muted);
+}
+
+.levapos-reports-summary-range {
+  margin: 6px 0 0;
+  font-size: 0.95rem;
+  color: var(--levapos-text);
+}
+
+.levapos-reports-summary-totals {
+  margin: 12px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.levapos-reports-profit {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.levapos-reports-profit-cost {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.levapos-reports-summary .levapos-summary-amount {
+  font-size: 2rem;
+}
+
 .levapos-callout-warn.bp5-callout {
   background-color: var(--levapos-warning-bg);
 }
@@ -703,6 +1056,24 @@
 .levapos-form-narrow {
   max-width: 32rem;
   margin: 0 auto;
+}
+
+.levapos-input-field {
+  margin-bottom: 16px;
+}
+
+.levapos-input-field .bp5-input-group {
+  width: 100%;
+}
+
+.levapos-product-profit-preview {
+  margin: -8px 0 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.levapos-product-profit {
+  font-weight: 600;
 }
 
 .levapos-flex-1 {
@@ -736,4 +1107,61 @@
 .levapos-text-success {
   color: var(--levapos-primary);
   font-size: 0.875rem;
+}
+
+.levapos-settings-page .bp5-card {
+  margin-bottom: 16px;
+}
+
+.levapos-settings-shortcuts {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.levapos-settings-shortcuts th {
+  width: 7rem;
+  padding: 10px 16px 10px 0;
+  text-align: left;
+  vertical-align: top;
+  font-weight: 600;
+}
+
+.levapos-settings-shortcuts td {
+  padding: 10px 0;
+  color: var(--levapos-text-muted);
+  line-height: 1.45;
+}
+
+.levapos-settings-shortcuts tr + tr th,
+.levapos-settings-shortcuts tr + tr td {
+  border-top: 1px solid var(--levapos-border, rgba(0, 0, 0, 0.08));
+}
+
+.levapos-settings-kbd {
+  display: inline-block;
+  min-width: 2.25rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--levapos-border, rgba(0, 0, 0, 0.12));
+  background: var(--levapos-surface-2, #f4f6f8);
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--levapos-text);
+  text-align: center;
+}
+
+.levapos-settings-steps,
+.levapos-settings-tips {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--levapos-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.levapos-settings-steps li + li,
+.levapos-settings-tips li + li {
+  margin-top: 12px;
 }

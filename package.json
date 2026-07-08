@@ -1,8 +1,8 @@
 {
   "name": "levapos",
   "version": "1.0.0",
-  "description": "PAPI FREESHOP — aplikacion desktop për shitje (Electron + React)",
-  "author": "PAPI FREESHOP",
+  "description": "LEVA FREESHOP — aplikacion desktop për shitje (Electron + React)",
+  "author": "LEVA FREESHOP",
   "private": true,
   "type": "module",
   "main": "src/main/main.js",
@@ -40,27 +40,37 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "png-to-ico": "^3.0.1",
     "postcss": "^8.5.14",
     "vite": "^8.0.12",
     "wait-on": "^9.0.10"
   },
   "build": {
     "appId": "com.levapos.desktop",
-    "productName": "PAPI FREESHOP",
+    "productName": "LEVA FREESHOP",
     "copyright": "Copyright © 2026",
     "forceCodeSigning": false,
     "directories": {
       "output": "release"
     },
+    "icon": "src/assets/atm.png",
     "files": [
       "dist/renderer/**/*",
       "src/main/**/*",
+      "src/assets/atm.png",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "src/assets/atm.png",
+        "to": "assets/atm.png"
+      }
     ],
     "asarUnpack": [
       "node_modules/sql.js/dist/sql-wasm.wasm"
     ],
     "win": {
+      "icon": "src/assets/atm.png",
       "signAndEditExecutable": false,
       "verifyUpdateCodeSignature": false,
       "target": [

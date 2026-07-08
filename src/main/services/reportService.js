@@ -19,11 +19,24 @@ function todayIsoDate() {
   return `${y}-${m}-${d}`
 }
 
-/** Data YYYY-MM-DD nga vlera created_at e SQLite */
+/**
+ * Dita e biznesit fillon në orën 05:00 (tregu mbyllet në 5 të mëngjesit),
+ * prandaj shitjet e bëra para orës 05:00 numërohen te dita e mëparshme.
+ */
+const BUSINESS_DAY_START_HOUR = 5
+
+/** Data e biznesit YYYY-MM-DD (orë lokale − 5h) nga vlera created_at e SQLite */
 function rowCalendarDate(createdAt) {
-  const s = String(createdAt ?? '')
-  if (s.length >= 10) return s.slice(0, 10)
-  return s
+  const d = new Date(createdAt)
+  if (Number.isNaN(d.getTime())) {
+    const s = String(createdAt ?? '')
+    return s.length >= 10 ? s.slice(0, 10) : s
+  }
+  const shifted = new Date(d.getTime() - BUSINESS_DAY_START_HOUR * 60 * 60 * 1000)
+  const y = shifted.getFullYear()
+  const m = String(shifted.getMonth() + 1).padStart(2, '0')
+  const day = String(shifted.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 /** Vendos format valute në një qelizë */
@@ -61,7 +74,8 @@ export async function exportSalesToExcel(webContents, payload = {}) {
     FROM sale_items si
     JOIN sales s ON s.id = si.sale_id
     JOIN users u ON u.id = s.user_id
-    WHERE date(s.created_at) >= date(?) AND date(s.created_at) <= date(?)
+    WHERE date(s.created_at, 'localtime', '-${BUSINESS_DAY_START_HOUR} hours') >= date(?)
+      AND date(s.created_at, 'localtime', '-${BUSINESS_DAY_START_HOUR} hours') <= date(?)
     ORDER BY s.created_at ASC, si.id ASC
   `
 
@@ -166,7 +180,7 @@ export async function exportProductsToExcel(webContents) {
   requireAdmin()
   const win = BrowserWindow.fromWebContents(webContents)
   const rows = allRows(
-    'SELECT id, name, barcode, price, stock_quantity, created_at, updated_at FROM products ORDER BY name COLLATE NOCASE',
+    'SELECT id, name, barcode, price, cost_price, stock_quantity, created_at, updated_at FROM products ORDER BY name COLLATE NOCASE',
     [],
   )
 
@@ -182,16 +196,23 @@ export async function exportProductsToExcel(webContents) {
   ws.columns = EXCEL.products.columns.map((c) => ({ ...c }))
 
   for (const r of rows) {
+    const selling = Number(r.price)
+    const cost = Number(r.cost_price ?? 0)
+    const profit = Math.round((selling - cost) * 100) / 100
     const dataRow = ws.addRow({
       id: r.id,
       name: r.name,
       barcode: r.barcode,
-      price: Number(r.price),
+      costPrice: cost,
+      price: selling,
+      profit,
       stock: r.stock_quantity,
       created: r.created_at,
       updated: r.updated_at,
     })
-    setEuroCell(dataRow.getCell('price'), Number(r.price))
+    setEuroCell(dataRow.getCell('costPrice'), cost)
+    setEuroCell(dataRow.getCell('price'), selling)
+    setEuroCell(dataRow.getCell('profit'), profit)
   }
 
   ws.addRow([])
@@ -199,7 +220,9 @@ export async function exportProductsToExcel(webContents) {
     id: '',
     name: EXCEL.products.footerProductCount,
     barcode: '',
+    costPrice: '',
     price: '',
+    profit: '',
     stock: rows.length,
     created: '',
     updated: '',

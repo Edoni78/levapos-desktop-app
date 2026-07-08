@@ -79,7 +79,9 @@ export function ProductsPage() {
               <tr>
                 <th>{sq.products.colName}</th>
                 <th>{sq.products.colBarcode}</th>
-                <th>{sq.products.colPrice}</th>
+                <th>{sq.products.colCostPrice}</th>
+                <th>{sq.products.colSellingPrice}</th>
+                <th>{sq.products.colProfit}</th>
                 <th>{sq.products.colStock}</th>
                 <th />
               </tr>
@@ -89,7 +91,17 @@ export function ProductsPage() {
                 <tr key={p.id}>
                   <td>{p.name}</td>
                   <td className="levapos-mono">{p.barcode}</td>
+                  <td>€{(p.costPrice ?? 0).toFixed(2)}</td>
                   <td>€{p.price.toFixed(2)}</td>
+                  <td
+                    className={
+                      (p.profit ?? 0) < 0
+                        ? 'levapos-product-profit levapos-text-danger'
+                        : 'levapos-product-profit levapos-text-success'
+                    }
+                  >
+                    €{(p.profit ?? 0).toFixed(2)}
+                  </td>
                   <td>{p.stockQuantity}</td>
                   <td>
                     <div className="levapos-row">

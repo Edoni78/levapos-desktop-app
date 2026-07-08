@@ -83,6 +83,18 @@ export function registerIpcHandlers() {
     'sales:getByDateRange',
     wrap(async (_e, payload) => saleService.getByDateRange(payload)),
   )
+  ipcMain.handle(
+    'sales:getLast',
+    wrap(async () => saleService.getLastSale()),
+  )
+  ipcMain.handle(
+    'sales:getRecent',
+    wrap(async (_e, payload) => saleService.getRecentSales(payload)),
+  )
+  ipcMain.handle(
+    'sales:deleteByDateRange',
+    wrap(async (_e, payload) => saleService.deleteSalesByDateRange(payload)),
+  )
 
   ipcMain.handle(
     'reports:exportSalesToExcel',

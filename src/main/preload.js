@@ -16,6 +16,9 @@ const channels = [
   'sales:create',
   'sales:getTodayTotal',
   'sales:getByDateRange',
+  'sales:getLast',
+  'sales:getRecent',
+  'sales:deleteByDateRange',
   'reports:exportSalesToExcel',
   'reports:exportProductsToExcel',
 ]

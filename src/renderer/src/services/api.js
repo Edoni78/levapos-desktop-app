@@ -30,6 +30,9 @@ export const api = {
   salesCreate: (payload) => ipc('sales:create', payload),
   salesGetTodayTotal: () => ipc('sales:getTodayTotal'),
   salesGetByDateRange: (payload) => ipc('sales:getByDateRange', payload),
+  salesGetLast: () => ipc('sales:getLast'),
+  salesGetRecent: (payload) => ipc('sales:getRecent', payload ?? {}),
+  salesDeleteByDateRange: (payload) => ipc('sales:deleteByDateRange', payload),
 
   reportsExportSalesToExcel: (payload) =>
     ipc('reports:exportSalesToExcel', payload ?? {}),

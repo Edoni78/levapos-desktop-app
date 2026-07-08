@@ -121,6 +121,24 @@ function runMigrations() {
     CREATE INDEX IF NOT EXISTS idx_sales_user_id ON sales(user_id);
     CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
   `)
+  migrateProductsCostPrice()
+  migrateSaleItemsUnitCost()
+}
+
+function migrateProductsCostPrice() {
+  const cols = allRows('PRAGMA table_info(products)')
+  const hasCost = cols.some((c) => c.name === 'cost_price')
+  if (!hasCost) {
+    run('ALTER TABLE products ADD COLUMN cost_price REAL NOT NULL DEFAULT 0')
+  }
+}
+
+function migrateSaleItemsUnitCost() {
+  const cols = allRows('PRAGMA table_info(sale_items)')
+  const hasUnitCost = cols.some((c) => c.name === 'unit_cost')
+  if (!hasUnitCost) {
+    run('ALTER TABLE sale_items ADD COLUMN unit_cost REAL')
+  }
 }
 
 export function run(sql, params = []) {

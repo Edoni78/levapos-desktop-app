@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Button as BpButton, Callout, HTMLTable } from '@blueprintjs/core'
+import { Button as BpButton, Callout, HTMLTable, Intent } from '@blueprintjs/core'
 import { Button } from '../components/Button.jsx'
 import { Card } from '../components/Card.jsx'
 import { Input } from '../components/Input.jsx'
@@ -25,30 +25,82 @@ function parseMoneyInput(s) {
   return Number.isFinite(n) ? n : 0
 }
 
+/** Çmimi efektiv i një rreshti (i ndryshuar me dorë ose çmimi i produktit). */
+function linePrice(line) {
+  const raw = line.priceText != null ? line.priceText : line.product.price
+  return roundMoney(parseMoneyInput(raw))
+}
+
+/**
+ * Kur totali ndryshohet me dorë, e shpërndajmë proporcionalisht te çmimet e
+ * rreshtave, që shporta, totali dhe fatura të jenë të njëjta kudo. Rreshti i
+ * fundit merr mbetjen që shuma të dalë saktësisht sa totali i shkruar.
+ */
+function distributeCartToTotal(lines, target) {
+  const safeTarget = Math.max(0, roundMoney(target))
+  if (lines.length === 0) return lines.map((l) => ({ ...l }))
+  const current = Math.round(
+    lines.reduce((s, l) => s + lineTotal(linePrice(l), l.quantity), 0) * 100,
+  ) / 100
+  if (current <= 0) return lines.map((l) => ({ ...l }))
+  const factor = safeTarget / current
+  let running = 0
+  return lines.map((line, i) => {
+    const lt = lineTotal(linePrice(line), line.quantity)
+    const newLineTotal =
+      i === lines.length - 1 ? roundMoney(safeTarget - running) : roundMoney(lt * factor)
+    running = roundMoney(running + newLineTotal)
+    const newUnit = line.quantity > 0 ? roundMoney(newLineTotal / line.quantity) : 0
+    return { ...line, priceText: newUnit.toFixed(2) }
+  })
+}
+
 export function PosPage() {
   const { user } = useAuth()
   const barcodeRef = useRef(null)
+  const nameSearchRef = useRef(null)
   const tenderRef = useRef(null)
   const [barcode, setBarcode] = useState('')
+  const [nameSearch, setNameSearch] = useState('')
+  const [nameDebounced, setNameDebounced] = useState('')
+  const [nameResults, setNameResults] = useState([])
   const [tender, setTender] = useState('')
   const [lastLookup, setLastLookup] = useState('')
   const [cart, setCart] = useState([])
+  const [totalText, setTotalText] = useState(null)
   const [banner, setBanner] = useState('')
   const [busy, setBusy] = useState(false)
   const [receipt, setReceipt] = useState(null)
   const [quickProducts, setQuickProducts] = useState([])
   const [changeInfo, setChangeInfo] = useState(null)
+  const [saleHistoryBrowse, setSaleHistoryBrowse] = useState(null)
+
+  const viewedSale = useMemo(() => {
+    if (!saleHistoryBrowse) return null
+    return saleHistoryBrowse.sales[saleHistoryBrowse.index] ?? null
+  }, [saleHistoryBrowse])
+
+  const isBrowsingSales = saleHistoryBrowse != null
 
   const cartTotal = useMemo(
     () =>
       Math.round(
-        cart.reduce((s, l) => s + lineTotal(l.product.price, l.quantity), 0) * 100,
+        cart.reduce((s, l) => s + lineTotal(linePrice(l), l.quantity), 0) * 100,
       ) / 100,
     [cart],
   )
 
+  const effectiveTotal =
+    totalText == null ? cartTotal : roundMoney(parseMoneyInput(totalText))
+
   const focusBarcode = useCallback(() => {
     barcodeRef.current?.focus()
+  }, [])
+
+  const focusTender = useCallback(() => {
+    const el = tenderRef.current
+    el?.focus()
+    if (el && typeof el.select === 'function') el.select()
   }, [])
 
   useEffect(() => {
@@ -70,9 +122,41 @@ export function PosPage() {
   }, [])
 
   useEffect(() => {
-    if (receipt) return
+    const t = window.setTimeout(() => setNameDebounced(nameSearch.trim()), 300)
+    return () => window.clearTimeout(t)
+  }, [nameSearch])
+
+  useEffect(() => {
+    if (receipt || isBrowsingSales) {
+      setNameResults([])
+      return
+    }
+    if (nameDebounced.length < 2) {
+      setNameResults([])
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const list = await api.productsGetAll({
+          posSearch: true,
+          search: nameDebounced,
+          limit: 15,
+        })
+        if (!cancelled) setNameResults(list)
+      } catch {
+        if (!cancelled) setNameResults([])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [nameDebounced, receipt, isBrowsingSales])
+
+  useEffect(() => {
+    if (receipt || isBrowsingSales) return
     const id = window.setInterval(() => {
-      if (receipt) return
+      if (receipt || isBrowsingSales) return
       if (document.activeElement?.closest('[data-pos-keep-focus]')) return
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
         return
@@ -80,7 +164,7 @@ export function PosPage() {
       focusBarcode()
     }, 800)
     return () => window.clearInterval(id)
-  }, [focusBarcode, receipt])
+  }, [focusBarcode, receipt, isBrowsingSales])
 
   const addProductToCart = useCallback((product) => {
     if (!product) return
@@ -90,6 +174,7 @@ export function PosPage() {
     }
     setBanner('')
     setChangeInfo(null)
+    setTotalText(null)
     setCart((prev) => {
       const idx = prev.findIndex((l) => l.product.id === product.id)
       if (idx >= 0) {
@@ -102,7 +187,7 @@ export function PosPage() {
         next[idx] = { ...line, quantity: line.quantity + 1 }
         return next
       }
-      return [...prev, { product, quantity: 1 }]
+      return [...prev, { product, quantity: 1, priceText: String(product.price) }]
     })
   }, [])
 
@@ -135,8 +220,64 @@ export function PosPage() {
     [addProductToCart, focusBarcode],
   )
 
+  const pickNameSearchResult = useCallback(
+    (product) => {
+      addProductToCart(product)
+      setNameSearch('')
+      setNameDebounced('')
+      setNameResults([])
+      focusBarcode()
+    },
+    [addProductToCart, focusBarcode],
+  )
+
+  const exitSaleHistory = useCallback(() => {
+    setSaleHistoryBrowse(null)
+    focusBarcode()
+  }, [focusBarcode])
+
+  const stepSaleHistoryBack = useCallback(async () => {
+    if (saleHistoryBrowse) {
+      const nextIndex = saleHistoryBrowse.index + 1
+      if (nextIndex >= saleHistoryBrowse.sales.length) {
+        exitSaleHistory()
+        return
+      }
+      setBanner('')
+      setSaleHistoryBrowse({ ...saleHistoryBrowse, index: nextIndex })
+      return
+    }
+
+    try {
+      const sales = await api.salesGetRecent({ limit: 200 })
+      if (!sales.length) {
+        setBanner(sq.pos.noLastSale)
+        return
+      }
+      setBanner('')
+      setSaleHistoryBrowse({ sales, index: 0 })
+    } catch (e) {
+      setBanner(e instanceof Error ? e.message : sq.pos.lastSaleLoadFailed)
+    }
+  }, [saleHistoryBrowse, exitSaleHistory])
+
+  const stepSaleHistoryForward = useCallback(() => {
+    if (!saleHistoryBrowse) return
+    if (saleHistoryBrowse.index <= 0) {
+      exitSaleHistory()
+      return
+    }
+    setBanner('')
+    setSaleHistoryBrowse({
+      ...saleHistoryBrowse,
+      index: saleHistoryBrowse.index - 1,
+    })
+  }, [saleHistoryBrowse, exitSaleHistory])
+
+  const displayTotal = viewedSale ? Number(viewedSale.sale.totalAmount) : effectiveTotal
+
   useEffect(() => {
-    if (receipt) return
+    if (receipt || isBrowsingSales) return
 
     let buffer = ''
     let lastKeyTime = 0
@@ -152,8 +293,43 @@ export function PosPage() {
       return el?.id === 'barcode' || el === barcodeRef.current
     }
 
+    function isNameSearchFocused() {
+      const el = document.activeElement
+      return el?.id === 'pos-name-search' || el === nameSearchRef.current
+    }
+
+    function isPriceFocused() {
+      const el = document.activeElement
+      return el?.classList?.contains('levapos-cart-price-input') === true
+    }
+
+    function isTotalFocused() {
+      const el = document.activeElement
+      return el?.classList?.contains('levapos-total-edit-input') === true
+    }
+
     function onKeyDown(e) {
-      if (isTenderFocused() || isBarcodeFocused()) return
+      if (
+        !isTenderFocused() &&
+        !isNameSearchFocused() &&
+        !isPriceFocused() &&
+        !isTotalFocused() &&
+        (e.key === '.' || e.code === 'Period' || e.code === 'NumpadDecimal')
+      ) {
+        e.preventDefault()
+        e.stopPropagation()
+        focusTender()
+        return
+      }
+
+      if (
+        isTenderFocused() ||
+        isBarcodeFocused() ||
+        isNameSearchFocused() ||
+        isPriceFocused() ||
+        isTotalFocused()
+      )
+        return
       if (e.ctrlKey || e.metaKey || e.altKey) return
 
       if (e.key === 'Enter') {
@@ -193,12 +369,32 @@ export function PosPage() {
 
     window.addEventListener('keydown', onKeyDown, true)
     return () => window.removeEventListener('keydown', onKeyDown, true)
-  }, [receipt, addByBarcode, focusBarcode])
+  }, [receipt, isBrowsingSales, addByBarcode, focusBarcode, focusTender])
 
   function onBarcodeKeyDown(e) {
     if (e.key === 'Enter') {
       e.preventDefault()
       void addByBarcode(barcode)
+    }
+  }
+
+  function onNameSearchKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (nameResults.length === 1) {
+        pickNameSearchResult(nameResults[0])
+        return
+      }
+      if (nameResults.length > 1) {
+        setBanner(sq.pos.nameSearchPickOne)
+      }
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      setNameSearch('')
+      setNameDebounced('')
+      setNameResults([])
     }
   }
 
@@ -209,9 +405,28 @@ export function PosPage() {
     }
   }
 
+  function commitTotal() {
+    if (totalText == null) return
+    const target = roundMoney(parseMoneyInput(totalText))
+    setCart((prev) => distributeCartToTotal(prev, target))
+    setTotalText(null)
+  }
+
+  function onTotalKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      e.stopPropagation()
+      commitTotal()
+      if (tender.trim()) {
+        applyTenderAndChange()
+      }
+      focusTender()
+    }
+  }
+
   function applyTenderAndChange() {
     const paid = roundMoney(parseMoneyInput(tender))
-    const total = roundMoney(cartTotal)
+    const total = roundMoney(effectiveTotal)
     if (cart.length === 0) {
       setChangeInfo(null)
       setBanner(sq.pos.cartEmpty)
@@ -232,6 +447,7 @@ export function PosPage() {
 
   function bumpQty(productId, delta) {
     setChangeInfo(null)
+    setTotalText(null)
     setCart((prev) => {
       const idx = prev.findIndex((l) => l.product.id === productId)
       if (idx < 0) return prev
@@ -248,20 +464,43 @@ export function PosPage() {
     })
   }
 
+  function setLinePrice(productId, text) {
+    setChangeInfo(null)
+    setTotalText(null)
+    setCart((prev) => {
+      const idx = prev.findIndex((l) => l.product.id === productId)
+      if (idx < 0) return prev
+      const copy = [...prev]
+      copy[idx] = { ...copy[idx], priceText: text }
+      return copy
+    })
+  }
+
   function removeLine(productId) {
     setChangeInfo(null)
+    setTotalText(null)
     setCart((prev) => prev.filter((l) => l.product.id !== productId))
   }
 
-  function clearCart() {
+  const removeLastCartLine = useCallback(() => {
+    if (cart.length === 0) return
+    setChangeInfo(null)
+    setTotalText(null)
+    setBanner('')
+    setCart((prev) => prev.slice(0, -1))
+    focusBarcode()
+  }, [cart.length, focusBarcode])
+
+  const clearCart = useCallback(() => {
     setCart([])
     setBanner('')
     setTender('')
     setChangeInfo(null)
+    setTotalText(null)
     focusBarcode()
-  }
+  }, [focusBarcode])
 
-  async function finishSale() {
+  const finishSale = useCallback(async () => {
     if (cart.length === 0) return
     setBusy(true)
     setBanner('')
@@ -269,19 +508,83 @@ export function PosPage() {
       const items = cart.map((l) => ({
         productId: l.product.id,
         quantity: l.quantity,
+        unitPrice: linePrice(l),
       }))
-      const res = await api.salesCreate({ items })
+      const totalOverride =
+        totalText == null
+          ? Math.round(
+              cart.reduce((s, l) => s + lineTotal(linePrice(l), l.quantity), 0) * 100,
+            ) / 100
+          : roundMoney(parseMoneyInput(totalText))
+      const res = await api.salesCreate({ items, totalOverride })
       setReceipt(res)
       setCart([])
       setTender('')
       setChangeInfo(null)
+      setTotalText(null)
       focusBarcode()
     } catch (e) {
       setBanner(e instanceof Error ? e.message : sq.pos.saleFailed)
     } finally {
       setBusy(false)
     }
-  }
+  }, [cart, totalText, focusBarcode])
+
+  useEffect(() => {
+    if (receipt || isBrowsingSales) return
+
+    function onKeyDown(e) {
+      if (e.key !== 'Escape') return
+      e.preventDefault()
+      e.stopPropagation()
+      if (!busy && cart.length > 0) void finishSale()
+    }
+
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [receipt, isBrowsingSales, busy, cart.length, finishSale])
+
+  useEffect(() => {
+    if (receipt) return
+
+    function onKeyDown(e) {
+      if (e.key === 'F1') {
+        e.preventDefault()
+        e.stopPropagation()
+        void stepSaleHistoryBack()
+        return
+      }
+      if (e.key === 'F2') {
+        e.preventDefault()
+        e.stopPropagation()
+        stepSaleHistoryForward()
+        return
+      }
+      if (isBrowsingSales || busy) return
+      if (e.key === 'F3') {
+        e.preventDefault()
+        e.stopPropagation()
+        removeLastCartLine()
+        return
+      }
+      if (e.key === 'F4') {
+        e.preventDefault()
+        e.stopPropagation()
+        clearCart()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [
+    receipt,
+    isBrowsingSales,
+    busy,
+    stepSaleHistoryBack,
+    stepSaleHistoryForward,
+    removeLastCartLine,
+    clearCart,
+  ])
 
   return (
     <div className="levapos-page levapos-pos-page">
@@ -289,10 +592,20 @@ export function PosPage() {
         title={sq.pos.title}
         actions={
           <>
-            <Button type="button" variant="secondary" onClick={clearCart}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={isBrowsingSales}
+              onClick={clearCart}
+            >
               {sq.pos.clearCart}
             </Button>
-            <Button type="button" size="lg" disabled={busy || cart.length === 0} onClick={finishSale}>
+            <Button
+              type="button"
+              size="lg"
+              disabled={busy || cart.length === 0 || isBrowsingSales}
+              onClick={finishSale}
+            >
               {sq.pos.finishSale}
             </Button>
           </>
@@ -318,10 +631,77 @@ export function PosPage() {
 
       <div className="levapos-pos-layout">
         <div className="levapos-cart-panel">
-          <Card title={sq.pos.cart} className="levapos-pos-card">
-            <div className="levapos-pos-card-inner">
+          <Card
+            title={
+              viewedSale
+                ? sq.pos.saleHistoryTitle(
+                    viewedSale.sale.id,
+                    saleHistoryBrowse.index + 1,
+                    saleHistoryBrowse.sales.length,
+                  )
+                : sq.pos.cart
+            }
+            className="levapos-pos-card"
+          >
+            <div
+              className={
+                isBrowsingSales
+                  ? 'levapos-pos-card-inner levapos-pos-last-sale-mode'
+                  : 'levapos-pos-card-inner'
+              }
+            >
+              {saleHistoryBrowse ? (
+                <Callout intent={Intent.PRIMARY} className="levapos-last-sale-callout">
+                  {sq.pos.saleHistoryHint(
+                    saleHistoryBrowse.index,
+                    saleHistoryBrowse.sales.length,
+                  )}
+                </Callout>
+              ) : null}
               <div className="levapos-pos-inputs">
                 <div className="levapos-pos-input-barcode">
+                  <div className="levapos-pos-name-search" data-pos-keep-focus>
+                    <Input
+                      ref={nameSearchRef}
+                      id="pos-name-search"
+                      label={sq.pos.nameSearch}
+                      placeholder={sq.pos.nameSearchPlaceholder}
+                      value={nameSearch}
+                      onChange={(e) => {
+                        setNameSearch(e.target.value)
+                        setBanner('')
+                      }}
+                      onKeyDown={onNameSearchKeyDown}
+                      disabled={!!receipt || isBrowsingSales}
+                      autoComplete="off"
+                    />
+                    {nameDebounced.length >= 2 && !receipt && !isBrowsingSales ? (
+                      <ul className="levapos-pos-name-results" role="listbox">
+                        {nameResults.length === 0 ? (
+                          <li className="levapos-pos-name-results-empty">
+                            {sq.pos.nameSearchNoResults}
+                          </li>
+                        ) : (
+                          nameResults.map((p) => (
+                            <li key={p.id}>
+                              <button
+                                type="button"
+                                className="levapos-pos-name-result-btn"
+                                role="option"
+                                onClick={() => pickNameSearchResult(p)}
+                              >
+                                <span className="levapos-pos-name-result-title">{p.name}</span>
+                                <span className="levapos-pos-name-result-meta">
+                                  {p.barcode} · €{p.price.toFixed(2)} ·{' '}
+                                  {sq.pos.stockLabel(p.stockQuantity)}
+                                </span>
+                              </button>
+                            </li>
+                          ))
+                        )}
+                      </ul>
+                    ) : null}
+                  </div>
                   <div className="levapos-pos-barcode-row">
                     <Input
                       ref={barcodeRef}
@@ -358,7 +738,46 @@ export function PosPage() {
 
               <div className="levapos-pos-workspace">
                 <div className="levapos-cart-body">
-              {cart.length === 0 ? (
+              {viewedSale ? (
+                <div className="levapos-table-wrap">
+                  <p className="levapos-last-sale-meta">
+                    #{viewedSale.sale.id} · {viewedSale.sale.createdAt}
+                    {viewedSale.sale.cashierName ? ` · ${viewedSale.sale.cashierName}` : ''}
+                  </p>
+                  <HTMLTable striped className="levapos-cart-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: '42%' }}>{sq.pos.colProduct}</th>
+                        <th>{sq.pos.colPrice}</th>
+                        <th>{sq.pos.colQty}</th>
+                        <th>{sq.pos.colLine}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewedSale.items.map((item, idx) => (
+                        <tr key={`${item.barcode}-${idx}`}>
+                          <td>
+                            <div className="levapos-cart-product">{item.productName}</div>
+                          </td>
+                          <td>
+                            <span className="levapos-cart-money">
+                              €{Number(item.unitPrice).toFixed(2)}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="levapos-cart-qty-value">{item.quantity}</span>
+                          </td>
+                          <td>
+                            <span className="levapos-cart-line-total">
+                              €{Number(item.lineTotal).toFixed(2)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </HTMLTable>
+                </div>
+              ) : cart.length === 0 ? (
                 <p className="levapos-cart-empty">{sq.pos.emptyCart}</p>
               ) : (
                 <div className="levapos-table-wrap">
@@ -379,7 +798,20 @@ export function PosPage() {
                             <div className="levapos-cart-product">{line.product.name}</div>
                           </td>
                           <td>
-                            <span className="levapos-cart-money">€{line.product.price.toFixed(2)}</span>
+                            <div className="levapos-cart-price-edit">
+                              <span className="levapos-cart-price-euro">€</span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                className="levapos-cart-price-input"
+                                value={line.priceText ?? String(line.product.price)}
+                                onChange={(e) => setLinePrice(line.product.id, e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                data-pos-keep-focus
+                                aria-label={sq.pos.editPriceLabel}
+                                title={sq.pos.editPriceLabel}
+                              />
+                            </div>
                           </td>
                           <td>
                             <div className="levapos-cart-qty">
@@ -404,7 +836,7 @@ export function PosPage() {
                           </td>
                           <td>
                             <span className="levapos-cart-line-total">
-                              €{lineTotal(line.product.price, line.quantity).toFixed(2)}
+                              €{lineTotal(linePrice(line), line.quantity).toFixed(2)}
                             </span>
                           </td>
                           <td>
@@ -456,11 +888,47 @@ export function PosPage() {
               <div className="levapos-cart-totals">
                 <div className="levapos-total-card">
                 <div className="levapos-total-card-label">{sq.pos.totalDue}</div>
-                <div className="levapos-amount-lg">€{cartTotal.toFixed(2)}</div>
+                {viewedSale ? (
+                  <div className="levapos-amount-lg">€{displayTotal.toFixed(2)}</div>
+                ) : (
+                  (() => {
+                    const totalFieldValue =
+                      totalText == null ? cartTotal.toFixed(2) : totalText
+                    return (
+                      <div className="levapos-amount-lg levapos-total-edit">
+                        <span className="levapos-total-edit-euro">€</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          className="levapos-total-edit-input"
+                          style={{ width: `${Math.max(4, totalFieldValue.length + 0.5)}ch` }}
+                          value={totalFieldValue}
+                          onChange={(e) => {
+                            setTotalText(e.target.value)
+                            setChangeInfo(null)
+                          }}
+                          onKeyDown={onTotalKeyDown}
+                          onBlur={commitTotal}
+                          onFocus={(e) => e.target.select()}
+                          data-pos-keep-focus
+                          aria-label={sq.pos.editTotalLabel}
+                          title={sq.pos.editTotalLabel}
+                        />
+                      </div>
+                    )
+                  })()
+                )}
               </div>
 
               <div className="levapos-total-card">
-                {changeInfo ? (
+                {viewedSale ? (
+                  <>
+                    <div className="levapos-total-card-label">{sq.pos.saleId}</div>
+                    <div className="levapos-amount-lg levapos-amount-muted" style={{ fontSize: '2rem' }}>
+                      #{viewedSale.sale.id}
+                    </div>
+                  </>
+                ) : changeInfo ? (
                   changeInfo.shortfall != null ? (
                     <>
                       <div className="levapos-total-card-label levapos-amount-warn">

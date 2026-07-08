@@ -4,17 +4,38 @@ import { sq } from '../locale/sq.js'
 
 export function SettingsPage() {
   return (
-    <div className="levapos-page">
+    <div className="levapos-page levapos-settings-page">
       <PageHeader title={sq.settings.title} subtitle={sq.settings.subtitle} />
-      <Card title={sq.settings.aboutTitle}>
-        <ul style={{ margin: 0, paddingLeft: 20 }}>
-          <li className="levapos-text-muted" style={{ marginBottom: 8 }}>{sq.settings.about1}</li>
-          <li className="levapos-text-muted" style={{ marginBottom: 8 }}>{sq.settings.about2}</li>
-          <li className="levapos-text-muted">{sq.settings.about3}</li>
-        </ul>
+
+      <Card title={sq.settings.shortcutsTitle}>
+        <table className="levapos-settings-shortcuts">
+          <tbody>
+            {sq.settings.shortcuts.map((row) => (
+              <tr key={row.key}>
+                <th scope="row">
+                  <kbd className="levapos-settings-kbd">{row.key}</kbd>
+                </th>
+                <td>{row.desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </Card>
-      <Card title={sq.settings.securityTitle}>
-        <p className="levapos-text-muted" style={{ margin: 0 }}>{sq.settings.securityBody}</p>
+
+      <Card title={sq.settings.guideTitle}>
+        <ol className="levapos-settings-steps">
+          {sq.settings.guideSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+      </Card>
+
+      <Card title={sq.settings.tipsTitle}>
+        <ul className="levapos-settings-tips">
+          {sq.settings.tips.map((tip) => (
+            <li key={tip}>{tip}</li>
+          ))}
+        </ul>
       </Card>
     </div>
   )
